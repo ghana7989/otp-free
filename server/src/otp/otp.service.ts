@@ -67,6 +67,24 @@ export class OtpService {
     const cachedOtp = await this.redisClient.get(cacheKey);
     return cachedOtp === otp;
   }
+  async invalidateOtps(
+    userId: string,
+    purpose?: string,
+  ): Promise<{ deletedCount: number }> {
+    let result;
+    if (purpose) {
+      // Invalidate a specific OTP for a given purpose
+      result = await this.otpModel.deleteMany({ userId, purpose });
+      await this.redisClient.del(`otp:${userId}:${purpose}`);
+    } else {
+      // Invalidate all OTPs for the user
+      result = await this.otpModel.deleteMany({ userId });
+      // Assuming all keys are well known and follow the `otp:{userId}:{purpose}` pattern
+      const keys = await this.redisClient.keys(`otp:${userId}:*`);
+      await Promise.all(keys.map((key) => this.redisClient.del(key)));
+    }
+    return { deletedCount: result.deletedCount };
+  }
 
   async deleteAllOtps(): Promise<{ deletedCount: number }> {
     const result = await this.otpModel.deleteMany({});

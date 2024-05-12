@@ -9,6 +9,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  Param,
 } from '@nestjs/common';
 import { OtpService } from './otp.service';
 
@@ -32,6 +33,15 @@ export class OtpController {
   ): Promise<{ isValid: boolean }> {
     const isValid = await this.otpService.validateOtp(userId, purpose, otp);
     return { isValid };
+  }
+
+  @Delete('/invalidate/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async invalidateOtps(
+    @Param('userId') userId: string,
+    @Query('purpose') purpose?: string,
+  ): Promise<void> {
+    await this.otpService.invalidateOtps(userId, purpose);
   }
 
   @Delete('/delete-all')
